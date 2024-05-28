@@ -4,6 +4,7 @@ library(showtext)
 #library(prophet)
 library(chron)
 library(fable.prophet)
+library(BSOLTheme)
 
 font_add_google("Open Sans", "Open Sans")
 showtext_auto()
@@ -13,15 +14,15 @@ showtext_auto()
 theme_set(
   theme_classic(base_family = "Open Sans") +
     theme(
-      text = element_text(family="Open Sans", size = 12),
+      text = element_text(family="Open Sans", size = 16),
       axis.title = element_text(family="Open Sans"),
-      axis.text = element_text(family="Open Sans", size = 12),
+      axis.text = element_text(family="Open Sans", size = 16),
       panel.background = element_blank(),
       panel.grid = element_blank(),
       axis.line = element_line(colour ="#425563"),
       strip.background = element_rect(fill = "#c8cfd3"),
-      plot.title = element_text(face = "bold", size = 16),
-      plot.subtitle = element_text(face = "italic", size = 13),
+      plot.title = element_text(face = "bold", size = 24),
+      plot.subtitle = element_text(face = "italic", size = 20),
       strip.text = element_text(size = 14)
     )
 )
@@ -183,21 +184,25 @@ arrivals_1hrts |>
 
 # 
 
-models2 <- 
-  arrivals_1hrts %>% 
-  model(
-    arima_1 = ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(0,0,3) + PDQ(2,1,0)),
-    #arima_2 = ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(1,1,0) + PDQ(2,1,2)),
-    arima_3 = ARIMA(box_cox(arrivals, lambda) ~ 1 +pdq(4,0,0) + PDQ(2,1,0)),
-    arima_4 = ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(0,0,0) + PDQ(0,1,1)),
-    arima_5 = ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(3,0,0) + PDQ(2,1,0)),
-    arima_6 = ARIMA(box_cox(arrivals, lambda) ~ 0 + pdq(3,0,0) + PDQ(2,1,0)),
-    arima_7 = ARIMA(box_cox(arrivals, lambda) ~ 0 +pdq(4,0,0) + PDQ(2,1,0))
-    # arima_6 =  ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(2,0,1) + PDQ(2,1,0)),
-    #arima_7 =  ARIMA(box_cox(arrivals, lambda) ~ 0 + pdq(3,1,1) + PDQ(2,1,0)),
-    
-  )
+# models2 <- 
+#   arrivals_1hrts %>% 
+#   model(
+#     arima_1 = ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(0,0,3) + PDQ(2,1,0)),
+#     #arima_2 = ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(1,1,0) + PDQ(2,1,2)),
+#     arima_3 = ARIMA(box_cox(arrivals, lambda) ~ 1 +pdq(4,0,0) + PDQ(2,1,0)),
+#     arima_4 = ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(0,0,0) + PDQ(0,1,1)),
+#     arima_5 = ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(3,0,0) + PDQ(2,1,0)),
+#     #arima_6 = ARIMA(box_cox(arrivals, lambda) ~ 0 + pdq(3,0,0) + PDQ(2,1,0)),
+#     #arima_7 = ARIMA(box_cox(arrivals, lambda) ~ 0 +pdq(4,0,0) + PDQ(2,1,0))
+#     # arima_6 =  ARIMA(box_cox(arrivals, lambda) ~ 1 + pdq(2,0,1) + PDQ(2,1,0)),
+#     #arima_7 =  ARIMA(box_cox(arrivals, lambda) ~ 0 + pdq(3,1,1) + PDQ(2,1,0)),
+#     
+#   )
 
+
+#write_rds(models2, file="./data/models2.rds")
+
+models2 <- read_rds("./data/models2.rds")
 
 models2_2 <- 
   arrivals_1hrts %>% 
@@ -208,10 +213,14 @@ models2_2 <-
     
   )
 
+#write_rds(models2_2, file="./data/models2_2.rds")
+
+models2_2 <- read_rds("./data/models2_2.rds")
 
      # nnet = NNETAR(box_cox(arrivals, lambda)),
      # prophet = prophet(box_cox(arrivals, lambda))
 
+accuracy(models2)
 accuracy(models2_2)
 
  
@@ -222,11 +231,19 @@ models3 <-
     
   ) 
 
+#write_rds(models3, file="./data/models3.rds")
+
+models3 <- read_rds("./data/models3.rds")
+
 
 models3 %>% 
   report()
 
 accuracy(models3)
+
+models3 |> 
+  #select(arima_3) |> 
+  gg_tsresiduals(lag_max=24)
 
 models4 <- 
   arrivals_1hrts %>% 
@@ -245,10 +262,15 @@ models42 <-
   ) 
 
 
-accuracy(models2)
+models42 |> 
+  #select(arima_3) |> 
+  gg_tsresiduals(lag_max=24)
+
+
+accuracy(models42)
 
 models2 |> 
-  select(arima_1) |> 
+  select(arima_3) |> 
   gg_tsresiduals(lag_max=24)
 
 
@@ -299,7 +321,7 @@ fcst_48_plot<- arrivals_1hrts %>%
   as_tsibble(key=prediction, index = ArrivalTime1Hr)
   
 fcst_48_plot |>
-  filter(.model %in% c("arima_3", "arima_")) |>
+  filter(prediction %in% c("arima_3", "NNETAR")) |>
   autoplot(linewidth=1)
 
 # test to see if residuals are white noise
@@ -315,7 +337,33 @@ caf_fit |>
   autoplot(global_economy)
 
 
+a<- 
+  arrivals_1hrts |>
+  select(ArrivalTime1Hr, arrivals) |>
+  as.data.frame() |>
+  mutate(prediction = "baseline", NA, lcl= NA, ucl=NA) |>
+  bind_rows(fcst_48_plot) |>
+  filter(ArrivalTime1Hr > as.Date('2023-10-31') & 
+           prediction %in% c("baseline", "NNETAR", "arima_3"))|>
+  mutate(prediction = ifelse(prediction == "NNETAR", "Neural Network"
+                             , ifelse(prediction == "arima_3", "Seasonal ARIMA", "baseline"))) |>
+  ggplot(aes(y=arrivals, x = ArrivalTime1Hr, col = prediction), size=0.8)+
+  geom_ribbon(aes(ymin = lcl, ymax = ucl, fill = prediction), alpha=0.4, linewidth = 0)+
+  geom_line(linewidth=1) +
+  labs(title = "A&E hourly arrival prediction test",
+       subtitle = "ARIMA and Neural Network methods applied to hourly arrival data",
+       colour = "Prediction Method",
+       fill = "Prediction Method",
+       y = "Hourly arrivals",
+       x = "Date") +
+  scale_x_datetime(date_breaks = "1 days", date_labels = "%d-%b")+
+  #scale_color_brewer(palette = "Dark2")+
+  scale_color_bsol()+
+  scale_fill_bsol()
+  
+a
 
+ggsave("./output/hourly_preds.png", a, device="png", width = 6, height =  4, scale = 1)
 
 # model(NNETAR(sqrt(value)))
 #   prophet(Demand ~ Temperature + Cooling + Working_Day +
