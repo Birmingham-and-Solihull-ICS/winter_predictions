@@ -4,7 +4,6 @@
 stable](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-# usethis <a href="https://usethis.r-lib.org"><img src="man/figures/logo.png" align="right" height="138" alt="usethis website" /></a>
 
 # Winter predictions learning for BSOL
 
